@@ -38,7 +38,8 @@ $w.__defineGetter__("location", function(url){
 			setHistory(_hash, "hash");
 		},
 		get host(){
-			return this.hostname + (this.port !== "")?":"+this.port:"";
+			return this.hostname + 
+			  ((this.port === "" || this.port === "80" || this.port === "443") ? "" : ":"+this.port);
 		},
 		set host(_host){
 			$w.location = this.protocol + _host + this.pathname + 
