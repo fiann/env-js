@@ -41,18 +41,45 @@ __extend__(HTMLElement.prototype, {
 		set innerHTML(html){
 		    //Should be replaced with HTMLPARSER usage
             //$debug('SETTING INNER HTML ('+this+'+'+html.substring(0,64));
-            var doc = new HTMLDocument($implementation,null,"");
-            $w.parseHtmlDocument(html,doc,null,null,true);
-            var parent = doc.body;
+            var doc = new HTMLDocument(this.ownerDocument.implementation,
+                                        this.ownerDocument._parentWindow,
+                                        "");
+// print("innerHTML",html);
+// try { throw new Error; } catch(e) { print(e.stack); }
+            var docstring = '<html><head></head><body>'+
+                '<envjs_1234567890 xmlns="envjs_1234567890">'
+                +html+
+                '</envjs_1234567890>'+
+                '</body></html>';
+            doc.in_inner_html = true;
+            this.ownerDocument._parentWindow.parseHtmlDocument(docstring,doc,null,null,true);
+            var parent = doc.body.childNodes[0];
 			while(this.firstChild != null){
 			    this.removeChild( this.firstChild );
 			}
 			var importedNode;
-			while(parent.firstChild != null){
+
+            var pn = this;
+            while(pn.parentNode) {
+                pn = pn.parentNode;
+            }
+            // print(this,pn,this.ownerDocument);
+            try{
+                if (pn === this.ownerDocument) {
+                    this.ownerDocument.in_inner_html = true;
+                    // print("yup");
+                }
+			    while(parent.firstChild != null){
 	            importedNode = this.importNode( 
 	                parent.removeChild( parent.firstChild ), true);
-			    this.appendChild( importedNode );   
-		    }
+			        this.appendChild( importedNode );   
+		        }
+            } finally {
+                if (pn === this.ownerDocument) {
+                    // print("nope");
+                    this.ownerDocument.in_inner_html = false;
+                }
+            }
 		    //Mark for garbage collection
 		    doc = null;
 		},
@@ -82,6 +109,7 @@ __extend__(HTMLElement.prototype, {
 		},
 		offsetLeft: 0,
 		offsetRight: 0,
+		offsetTop: 0,
 		get offsetParent(){
 		    /* TODO */
 		    return;
@@ -90,6 +118,7 @@ __extend__(HTMLElement.prototype, {
 		    /* TODO */
 		    return;
 	    },
+		scrollTop: 0,
 		scrollHeight: 0,
 		scrollWidth: 0,
 		scrollLeft: 0, 
@@ -141,38 +170,85 @@ __extend__(HTMLElement.prototype, {
         },
 
 		onclick: function(event){
-		    __eval__(this.getAttribute('onclick')||'', this);
+            return __eval__(this.getAttribute('onclick')||'', this);
 	    },
         
 
 		ondblclick: function(event){
-            __eval__(this.getAttribute('ondblclick')||'', this);
+            return __eval__(this.getAttribute('ondblclick')||'', this);
 	    },
 		onkeydown: function(event){
-            __eval__(this.getAttribute('onkeydown')||'', this);
+            return __eval__(this.getAttribute('onkeydown')||'', this);
 	    },
 		onkeypress: function(event){
-            __eval__(this.getAttribute('onkeypress')||'', this);
+            return __eval__(this.getAttribute('onkeypress')||'', this);
 	    },
 		onkeyup: function(event){
-            __eval__(this.getAttribute('onkeyup')||'', this);
+            return __eval__(this.getAttribute('onkeyup')||'', this);
 	    },
 		onmousedown: function(event){
-            __eval__(this.getAttribute('onmousedown')||'', this);
+            return __eval__(this.getAttribute('onmousedown')||'', this);
 	    },
 		onmousemove: function(event){
-            __eval__(this.getAttribute('onmousemove')||'', this);
+            return __eval__(this.getAttribute('onmousemove')||'', this);
 	    },
 		onmouseout: function(event){
-            __eval__(this.getAttribute('onmouseout')||'', this);
+            return __eval__(this.getAttribute('onmouseout')||'', this);
 	    },
 		onmouseover: function(event){
-            __eval__(this.getAttribute('onmouseover')||'', this);
+            return __eval__(this.getAttribute('onmouseover')||'', this);
 	    },
 		onmouseup: function(event){
-            __eval__(this.getAttribute('onmouseup')||'', this);
-	    }
+            return __eval__(this.getAttribute('onmouseup')||'', this);
+	    },
+
+    appendChild: function( newChild, refChild ) {
+        var rv = DOMElement.prototype.appendChild.apply(this, arguments);
+        var node = newChild;
+        var pn = this;
+        while(pn.parentNode) {
+            pn = pn.parentNode;
+        }
+        if(pn === node.ownerDocument) { 
+           __exec_script_tags__(newChild);
+        }
+        return rv;
+    }
 });
+
+var __exec_script_tags__ = function(node) {
+    var $env =  __ownerDocument__(node)._parentWindow.$envx;
+    var doc = __ownerDocument__(node);
+    var type = ( node.type === null ) ? "text/javascript" : node.type;
+    // print("check exec",node,node.ownerDocument.in_inner_html);
+    // print(node,node.childNodes.length);
+    if(node.nodeName.toLowerCase() == 'script' && type == "text/javascript"){
+        // print("check",node,node.src,node.text,node.ownerDocument.in_inner_html,doc.parentWindow,node.executed);
+        if (node.ownerDocument.in_inner_html) {
+            //print("ignore",node);
+            node.executed = true;
+        } else if (doc.parentWindow &&
+                   !node.ownerDocument.in_inner_html &&
+                   !node.executed && (
+                       (node.src && !node.src.match(/^\s*$/)) ||
+                        (node.text && !node.text.match(/^\s*$/))
+                   ) ) {
+            node.executed = true;
+            //p.replaceEntities = true;
+            //print("exec",node);
+            var okay = $env.loadLocalScript(node, null);
+            // only fire event if we actually had something to load
+            if (node.src && node.src.length > 0){
+                var event = doc.createEvent();
+                event.initEvent( okay ? "load" : "error", false, false );
+                node.dispatchEvent( event, false );
+            }
+        }
+    }
+    for(var i=0; i < node.childNodes.length; i++) {
+        __exec_script_tags__(node.childNodes[i]);
+    }
+};
 
 var __recursivelyGatherText__ = function(aNode) {
     var accumulateText = "";
@@ -188,31 +264,37 @@ var __recursivelyGatherText__ = function(aNode) {
     return accumulateText;
 };
     
-var __eval__ = $env.__eval__ || function(script, startingNode){
+var __eval__ = function(script,node){
     if (script == "")
-        return;                    // don't assemble environment if no script...
-
-    try{
-        var doEval = function(scriptText){
-            eval(scriptText);
-        };
-
-        var listOfScopes = [];
-        for (var node = startingNode; node != null; node = node.parentNode)
-            listOfScopes.push(node);
-        listOfScopes.push($w);
-
-
-        var oldScopesArray = $env.configureScope(
-          doEval,        // the function whose scope chain to change
-          listOfScopes); // last array element is "head" of new chain
-        doEval.call(startingNode, script);
-        $env.restoreScope(oldScopesArray);
-                         // oldScopesArray is N-element array of two-element
-                         // arrays.  First element is JS object whose scope
-                         // was modified, second is original value to restore.
+        return undefined;
+    try {
+        var scope = node;
+        var __scopes__ = [];
+        var original = script;
+        if(scope) {
+            // script = "(function(){return eval(original)}).call(__scopes__[0])";
+            script = "return (function(){"+original+"}).call(__scopes__[0])";
+            while(scope) {
+                __scopes__.push(scope);
+                scope = scope.parentNode;
+                script = "with(__scopes__["+(__scopes__.length-1)+"] ){"+script+"};";
+            }
+        }
+        script = "function(original,__scopes__){"+script+"}";
+        // print("scripta",script);
+        // print("scriptb",original);
+        var original_script_window = $master.first_script_window;
+        if ( !$master.first_script_window ) {
+            // $master.first_script_window = window;
+        }
+        // FIX!!!
+        var $inner = node.ownerDocument._parentWindow["$inner"];
+        var result = $master.evaluate(script,$inner)(original,__scopes__);
+        // $master.first_script_window = original_script_window;
+        return result;
     }catch(e){
-        $error(e);
+        $warn("Exception during on* event eval: "+e);
+        throw e;
     }
 };
 
@@ -291,7 +373,7 @@ var __blur__ = function(element){
 	element.dispatchEvent(event);
 };
 
-$w.HTMLElement = HTMLElement;
+// $w.HTMLElement = HTMLElement;
 
 // Local Variables:
 // espresso-indent-level:4

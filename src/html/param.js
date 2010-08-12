@@ -31,8 +31,8 @@ __extend__(HTMLParamElement.prototype, {
     },
     set valueType(value){
         this.setAttribute('valuetype',value);
-    },
+    }
 });
 
-$w.HTMLParamElement = HTMLParamElement;
+// $w.HTMLParamElement = HTMLParamElement;
 		

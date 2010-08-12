@@ -126,7 +126,7 @@ var inputElements_status = {};
 
 var inputElements_onchange = {
     onchange: function(event){
-        __eval__(this.getAttribute('onchange')||'', this)
+        return __eval__(this.getAttribute('onchange')||'', this);
     }
 };
 
@@ -144,7 +144,7 @@ var inputElements_focusEvents = {
         __blur__(this);
 
         if (this._oldValue != this.value){
-            var event = document.createEvent();
+            var event = this.ownerDocument.createEvent();
             event.initEvent("change");
             this.dispatchEvent( event );
         }
@@ -169,7 +169,7 @@ HTMLInputCommon.prototype = new HTMLElement;
 __extend__(HTMLInputCommon.prototype, {
     get form(){
         var parent = this.parentNode;
-        while(parent.nodeName.toLowerCase() != 'form'){
+        while(parent && parent.nodeName.toLowerCase() != 'form'){
             parent = parent.parentNode;
         }
         return parent;
@@ -194,7 +194,7 @@ __extend__(HTMLInputCommon.prototype, {
     }
 });
 
-$w.HTMLInputCommon = HTMLInputCommon;
+// $w.HTMLInputCommon = HTMLInputCommon;
 
 
 $debug("Defining HTMLTypeValueInputs");
@@ -238,6 +238,30 @@ __extend__(HTMLTypeValueInputs.prototype, {
         this.setAttribute('value',newValue);
     },
     setAttribute: function(name, value){
+        if (this.type == "radio" && name == "checked" && value && this.name) {
+            // HTMLElement.prototype.setAttribute.apply(this, ["checked", "checked"]);
+            // return;
+            var parent = this.parentNode;
+            while(parent != this.ownderDocument) {
+                if(parent.tagName == "FORM") {
+                    break;
+                }
+                parent = parent.parentNode;
+            }
+            if(parent && parent.tagName == "FORM") {
+                var xpath = './/input[@type="radio" and @name="'+this.name+'"]';
+                var nodes =
+                    this.ownerDocument.evaluate(xpath,parent, null, XPathResult.ANY_TYPE,null );
+                while(( node = nodes.iterateNext() )) {
+                    // FIX? events when we short circuit like this?
+                    if (node === this) {
+                        HTMLElement.prototype.setAttribute.call(node, "checked", "checked");
+                    } else {
+                        HTMLElement.prototype.removeAttribute.call(node, "checked");
+                    }
+                }
+            }
+        }
         if(name == 'value' && !this.defaultValue){
             this.defaultValue = value;
         }
@@ -245,7 +269,7 @@ __extend__(HTMLTypeValueInputs.prototype, {
     }
 });
 
-$w.HTMLTypeValueInputs = HTMLTypeValueInputs;
+// $w.HTMLTypeValueInputs = HTMLTypeValueInputs;
 
 
 
@@ -274,4 +298,10 @@ __extend__(HTMLInputAreaCommon.prototype, {
     }
 });
 
-$w.HTMLInputAreaCommon = HTMLInputAreaCommon;
+// $w.HTMLInputAreaCommon = HTMLInputAreaCommon;
+
+// Local Variables:
+// espresso-indent-level:4
+// c-basic-offset:4
+// tab-width:4
+// End:

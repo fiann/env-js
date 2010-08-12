@@ -59,6 +59,7 @@
             <fileset dir="${SRC_DIR}" includes="build.js" />
             <fileset dir="${SRC_DIR}" includes="intro.js" />
             -->
+            <fileset dir="${SRC_DIR}" includes="base64.js" />
             <fileset dir="${SRC_DIR}" includes="window/window.js" />
             <fileset dir="${SRC_DIR}" includes="dom/nodelist.js" />
             <fileset dir="${SRC_DIR}" includes="dom/namednodemap.js" />
@@ -79,7 +80,6 @@
             <fileset dir="${SRC_DIR}" includes="dom/implementation.js" />
             <fileset dir="${SRC_DIR}" includes="dom/document.js" />
             <fileset dir="${SRC_DIR}" includes="html/html.js" />
-            <fileset dir="${SRC_DIR}" includes="html/htmlparser.js" />
             <fileset dir="${SRC_DIR}" includes="html/document.js" />
             <fileset dir="${SRC_DIR}" includes="html/element.js" />
             <fileset dir="${SRC_DIR}" includes="html/collection.js" />
@@ -122,10 +122,23 @@
             <fileset dir="${SRC_DIR}" includes="html/textarea.js" />
             <fileset dir="${SRC_DIR}" includes="html/title.js" />
             <fileset dir="${SRC_DIR}" includes="html/tr.js" />
+
+            <fileset dir="${SRC_DIR}" includes="svg/document.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/element.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/animatedstring.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/stylable.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/rect.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/locatable.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/transformable.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/svgelement.js" />
+            <fileset dir="${SRC_DIR}" includes="svg/rectelement.js" />
+
             <fileset dir="${SRC_DIR}" includes="serializer/xml.js" />
+            <fileset dir="${SRC_DIR}" includes="xpath/xmltoken.js" />
             <fileset dir="${SRC_DIR}" includes="xpath/expression.js" />
             <fileset dir="${SRC_DIR}" includes="xpath/result.js" />
-            <fileset dir="${SRC_DIR}" includes="xslt/processor.js" />
+            <fileset dir="${SRC_DIR}" includes="xpath/implementation.js" />
+            <fileset dir="${SRC_DIR}" includes="xpath/util.js" />
             <fileset dir="${SRC_DIR}" includes="event/event.js" />
             <fileset dir="${SRC_DIR}" includes="event/mouseevent.js" />
             <fileset dir="${SRC_DIR}" includes="event/uievent.js" />
@@ -141,11 +154,14 @@
             <fileset dir="${SRC_DIR}" includes="window/css.js" />
             <fileset dir="${SRC_DIR}" includes="window/screen.js" />
             <fileset dir="${SRC_DIR}" includes="window/dialog.js" />
+<!--
             <fileset dir="${SRC_DIR}" includes="profile/aop.js" />
             <fileset dir="${SRC_DIR}" includes="profile/profile.js" />
+-->
             <fileset dir="${SRC_DIR}" includes="window/document.js" />
-            <fileset dir="${SRC_DIR}" includes="html/cookie.js" />
+            <fileset dir="${SRC_DIR}" includes="html/cookie.js" />                
             <fileset dir="${SRC_DIR}" includes="parser/intro.js" />
+            <!-- <fileset dir="${SRC_DIR}" includes="parser/html5.min.js" /> needs update from thatcher -->
             <fileset dir="${SRC_DIR}" includes="parser/html5.pretty.js" />
             <fileset dir="${SRC_DIR}" includes="parser/outro.js" />
         </concat>

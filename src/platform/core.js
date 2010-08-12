@@ -5,18 +5,20 @@
 var Envjs = function(){
     if(arguments.length === 2){
         for ( var i in arguments[1] ) {
-    		var g = arguments[1].__lookupGetter__(i), 
+            var g = arguments[1].__lookupGetter__(i), 
                 s = arguments[1].__lookupSetter__(i);
-    		if ( g || s ) {
-    			if ( g ) Envjs.__defineGetter__(i, g);
-    			if ( s ) Envjs.__defineSetter__(i, s);
-    		} else
-    			Envjs[i] = arguments[1][i];
-    	}
+            if ( g || s ) {
+                if ( g ) { Envjs.__defineGetter__(i, g); }
+                if ( s ) { Envjs.__defineSetter__(i, s); }
+            } else {
+                Envjs[i] = arguments[1][i];
+            }
+        }
     }
 
-    if (arguments[0] != null && arguments[0] != "")
+    if (arguments[0] !== null && arguments[0] !== "") {
         window.location = arguments[0];
+    }
 };
 
 /*
@@ -42,29 +44,32 @@ var Envjs = function(){
 	
     //set this if you want to get some internal log statements
     $env.logLevel = $env.INFO;
-    $env.logLevel = $env.DEBUG;
     $env.logLevel = $env.ERROR;
+    $env.logLevel = $env.DEBUG;
     $env.logLevel = $env.WARN;
     
     $env.debug  = function(msg){
-		if($env.logLevel >= $env.DEBUG)
+		if($env.logLevel >= $env.DEBUG) {
             $env.log(msg,"DEBUG"); 
+        }
     };
     $env.info = function(msg){
-        if($env.logLevel >= $env.INFO)
+        if($env.logLevel >= $env.INFO) {
             $env.log(msg,"INFO"); 
+        }
     };
     $env.warn   = function(msg){
-        if($env.logLevel >= $env.WARN)
+        if($env.logLevel >= $env.WARN) {
             $env.log(msg,"WARNIING");    
+        }
     };
     $env.error = function(msg, e){
         if ($env.logLevel >= $env.ERROR) {
           var line = $env.lineSource(e);
-          line != "" && ( line = " Line: "+ line );
+            if ( line !== "" ) { line = " Line: "+ line ;}
 			$env.log(msg + line, 'ERROR');
                         if(e) {
-  			  $env.log(e || "", 'ERROR');
+                            $env.log(e || "", 'ERROR');
                         }
 		}
     };
@@ -148,6 +153,8 @@ var Envjs = function(){
     $env.onScriptLoadError = $env.onScriptLoadError || function(){};
     $env.loadLocalScript = function(script, parser){
         $env.debug("loading script ");
+// print("loadloacl");
+// try{throw new Error}catch(e){print(e.stack);}
         var types, type, src, i, base, 
             docWrites = [],
             write = document.write,
@@ -161,7 +168,7 @@ var Envjs = function(){
                 for(i=0;i<types.length;i++){
                     if($env.scriptTypes[types[i]]){
 						if(script.src){
-                            $env.info("loading allowed external script :" + script.src);
+                            $env.info("loading allowed external script: " + script.src);
                             //lets you register a function to execute 
                             //before the script is loaded
                             if($env.beforeScriptLoad){
@@ -172,7 +179,7 @@ var Envjs = function(){
                                 }
                             }
                             base = "" + window.location;
-                            var filename = $env.location(script.src.match(/([^\?#]*)/)[1], base );
+                            var filename = $env.location(script.src, base );
                             try {                      
                               load(filename);
                             } catch(e) {
@@ -230,7 +237,7 @@ var Envjs = function(){
                 $env.reload(frameElement._content, url);
             }
             else {
-              var v = $env.newwindow(this,
+              var v = $env.newwindow($w,
                     frameElement.ownerDocument.parentWindow, url);
               frameElement._content = v;
             }
@@ -308,3 +315,9 @@ print("TT");
     }
 
 })($env);
+
+// Local Variables:
+// espresso-indent-level:4
+// c-basic-offset:4
+// tab-width:4
+// End:

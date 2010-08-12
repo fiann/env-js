@@ -3,11 +3,12 @@ $env.log = function(msg, level){
 };
 
 $env.location = function(path, base){
-    // print("loc",path,base);
+    var debug = false;
+    debug && print("loc",path,base);
     if ( path == "about:blank" ) {
         return path;
     }
-    var protocol = new RegExp('(^file\:|^http\:|^https\:)');
+    var protocol = new RegExp('(^file\:|^http\:|^https\:|data:)');
     var m = protocol.exec(path);
     if(m&&m.length>1){
         var url = Ruby.URI.parse(path);
@@ -15,19 +16,16 @@ $env.location = function(path, base){
         if ( s.substring(0,6) == "file:/" && s[6] != "/" ) {
             s = "file://" + s.substring(5,s.length);
         }
-        // print("YY",s);
+        debug && print("YY",s);
         return s;
     }else if(base){
         base = Ruby.URI.parse(base);
-        if ( path[0] == "/" ) {
-            base.path = path;
-            base = base + "";
-        } else {
-            base = base + "";
-            base = base.substring(0, base.lastIndexOf('/'));
-            base = base + '/' + path;
-        }
+        path = Ruby.URI.parse(path);
+        var b = Ruby.eval("lambda { |a,b| a+b; }");
+        base = b(base,path);
+        base = base + "";
         var result = base;
+        // print("ZZ",result);
         // ? This path only used for files?
         if ( result.substring(0,6) == "file:/" && result[6] != "/" ) {
             result = "file://" + result.substring(5,result.length);
@@ -35,21 +33,35 @@ $env.location = function(path, base){
         if ( result.substring(0,7) == "file://" ) {
             result = result.substring(7,result.length);
         }
-        // print("ZZ",result);
+        debug  && print("ZZ",result);
         return result;
     }else{
         //return an absolute url from a url relative to the window location
         // print("hi",  $master.first_script_window, $master.first_script_window && $master.first_script_window.location );
+        // if( ( base = window.location ) &&
         if( ( base = ( ( $master.first_script_window && $master.first_script_window.location ) || window.location ) ) &&
             ( base != "about:blank" ) &&
             base.href &&
             (base.href.length > 0) ) {
+
+            base_uri = Ruby.URI.parse(base.href);
+            new_uri = Ruby.URI.parse(path);
+            result = Ruby.eval("lambda { |a,b| a+b; }")(base_uri,new_uri)+"";
+            debug && print("IIII",result);
+            return result;
+
             base = base.href.substring(0, base.href.lastIndexOf('/'));
-            var result = base + '/' + path;
+            var result;
+            // print("XXXXX",base);
+            if ( base[base.length-1] == "/" || path[0] == "/" ) {
+                result = base + path;
+            } else {
+                result = base + '/' + path;
+            }
             if ( result.substring(0,6) == "file:/" && result[6] != "/" ) {
                 result = "file://" + result.substring(5,result.length);
             }
-            // print("****",result);
+            debug &&  print("****",result);
             return result;
         } else {
             // print("RRR",result);
@@ -58,7 +70,7 @@ $env.location = function(path, base){
     }
 };
 
-$env.connection = function(xhr, responseHandler, data){
+$env.connection = $master.connection || function(xhr, responseHandler, data){
     var url = Ruby.URI.parse(xhr.url);
     var connection;
     var resp;
@@ -99,7 +111,7 @@ $env.connection = function(xhr, responseHandler, data){
                     //xhr.responseHeaders['Content-Length'] = headerValue+'';
                     //xhr.responseHeaders['Date'] = new Date()+'';*/
                 }catch(e){
-                    $env.error('failed to load response headers',e);
+                    $env.warn('failed to load response headers',e);
                 }
                 
             }
@@ -142,13 +154,25 @@ $env.connection = function(xhr, responseHandler, data){
 	//write data to output stream if required
         if(data&&data.length&&data.length>0){
 	    if ( xhr.method == "PUT" || xhr.method == "POST" ) {
-                req.body = data;
+                Ruby.eval("lambda { |req,data| req.body = data}").call(req,data);
+                // req.body = data;
             }
 	}
 	
-        connection = Ruby.Net.HTTP.start( url.host, url.port );
+        try {
+            connection = Ruby.Net.HTTP.new( url.host, url.port );
+            if (url.scheme === "https") {
+                Ruby.eval("require 'net/https'");
+                connection.use_ssl = true;
+            }
+            connection.start();
+            resp = connection.request(req);
+        } catch(e) {
+            $env.warn("XHR net request failed: "+e);
+            // FIX: do the on error stuff ...
+            throw e;
+        }
 
-        resp = connection.request(req);
     }
     if(connection){
         try{
@@ -166,7 +190,8 @@ $env.connection = function(xhr, responseHandler, data){
                 xhr.responseHeaders[k] = v;
             });
         }catch(e){
-            $env.error('failed to load response headers',e);
+            $env.error('failed to load response headers: '+e);
+            throw e;
         }
         
         xhr.readyState = 4;
@@ -314,17 +339,29 @@ $env.lineSource = function(e){
 };
     
 $env.loadInlineScript = function(script){
-    var original_script_window = $master.first_script_window;
-    if ( !$master.first_script_window ) {
-        $master.first_script_window = window;
+    var undef;
+    if (script.text === undef ||
+        script.text === null ||
+        script.text.match(/^\s*$/)) {
+        return;
     }
+    var original_script_window = $master.first_script_window;
+    // debug("lis",original_script_window,original_script_window.isInner);
+    // debug("XX",window,window.isInner);
+    if ( !$master.first_script_window ) {
+        // $master.first_script_window = window;
+    }
+    // debug("lix",$master.first_script_window,$master.first_script_window.isInner,$w,$w.isInner);
     try {
-        $master.evaluate(script.text,$w);
+        $master.evaluate(script.text,$inner);
     } catch(e) {
         $env.error("error evaluating script: "+script.text);
         $env.error(e);
+        // try { throw new Error("here") } catch(b) { $env.error(b.stack); }
+        // throw e;
     }
-    $master.first_script_window = original_script_window;
+    // $master.first_script_window = original_script_window;
+    // debug("lis",original_script_window,original_script_window.isInner);
 };
     
 $env.writeToTempFile = function(text, suffix){
@@ -358,39 +395,47 @@ $env.deleteFile = function(url){
 
 $env.__eval__ = function(script,scope){
     if (script == "")
-        return;
+        return undefined;
     try {
-        var scopes = [];
+        var scope = node;
+        var __scopes__ = [];
         var original = script;
         if(scope) {
-            script = "(function(){return eval(original)}).call(scopes[0])";
+            // script = "(function(){return eval(original)}).call(__scopes__[0])";
+            script = "return (function(){"+original+"}).call(__scopes__[0])";
             while(scope) {
-                scopes.push(scope);
+                __scopes__.push(scope);
                 scope = scope.parentNode;
-                script = "with(scopes["+(scopes.length-1)+"] ){"+script+"};"
+                script = "with(__scopes__["+(__scopes__.length-1)+"] ){"+script+"};";
             }
         }
-        script = "function(original,scopes){"+script+"}"
+        script = "function(original,__scopes__){"+script+"}";
+        // print("scripta",script);
+        // print("scriptb",original);
         var original_script_window = $master.first_script_window;
         if ( !$master.first_script_window ) {
-            $master.first_script_window = window;
+            // $master.first_script_window = window;
         }
-        var result = $master.evaluate(script,$w)(original,scopes);
-        $master.first_script_window = original_script_window;
+        // FIX!!!
+        var $inner = node.ownerDocument._parentWindow["$inner"];
+        var result = $master.evaluate(script,$inner)(original,__scopes__);
+        // $master.first_script_window = original_script_window;
         return result;
     }catch(e){
-        $error(e);
+        $warn("Exception during on* event eval: "+e);
+        throw e;
     }
 };
 
-$env.newwindow = function(openingWindow, parentArg, url, outer){
+$env.newwindow = function(openingWindow, parentArg, url, outer,xhr_options){
 // print(location);
 // print("url",url,window.location,openingWindow);
 // print("parent",parentArg);
     var options = {
         opener: openingWindow,
         parent: parentArg,
-        url: $env.location(url)
+        url: $env.location(url),
+        xhr: xhr_options
     };
 
     // print("$w",$w);
@@ -406,12 +451,13 @@ $env.newwindow = function(openingWindow, parentArg, url, outer){
     return proxy;
 };
 
-$env.reload = function(oldWindowProxy, url){
+$env.reload = function(oldWindowProxy, url,options){
     // print("reload",window,oldWindowProxy,url);
     $env.newwindow( oldWindowProxy.opener,
-                                 oldWindowProxy.parent,
-                                 url,
-                                 oldWindowProxy );
+                    oldWindowProxy.parent,
+                    url,
+                    oldWindowProxy,
+                    options );
 };
 
 $env.sleep = function(n){Ruby.sleep(n/1000.);};

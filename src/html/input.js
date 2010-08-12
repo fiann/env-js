@@ -55,5 +55,11 @@ __extend__(HTMLInputElement.prototype, {
     }
 });
 
-$w.HTMLInputElement = HTMLInputElement;
+// $w.HTMLInputElement = HTMLInputElement;
 
+// Local Variables:
+// espresso-indent-level:4
+// c-basic-offset:4
+// tab-width:4
+// mode:auto-revert
+// End:

@@ -4,10 +4,11 @@
 *~
 /dist/env.johnson.js
 /lib/envjs/env.js
-/*envjs*.gem
-/*envjs.gemspec
+/lib/envjs/static.js
 /rhino/build
 /jshost
 /htmlparser/gwt*
 /htmlparser/html5
 /htmlparser/build
+/pkg
+/.wake

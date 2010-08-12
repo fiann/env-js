@@ -136,7 +136,14 @@ __extend__($w,{
   get status(){return $status;},
   set status(_status){$status = _status;},
   get top(){return $top || $window;},
-  get window(){return $window;} /*,
+  get window(){return $window;},
+
+  // DOM0
+
+  Image: function() {
+    return document.createElement("img");
+  }
+  /*,
   toString : function(){
       return '[object Window]';
   } FIX SMP */
@@ -147,6 +154,11 @@ $w.open = function(url, name, features, replace){
     $env.warn("'features' argument for 'window.open()' not yet implemented");
   if (replace)
     $env.warn("'replace' argument for 'window.open()' not yet implemented");
+
+  var undef;
+  if(url === undef || url === "") {
+    url = "about:blank";
+  }
 
   var newWindow = $env.newwindow(this, null, url);
   newWindow.$name = name;
@@ -173,10 +185,15 @@ $env.unload = function(windowToUnload){
 };
   
   
-$env.load = function(url){
+$env.load = function(url,xhr_options){
     $location = $env.location(url);
     __setHistory__($location);
-    $w.document.load($location);
+try{
+    $w.document.load($location,xhr_options);
+}catch(e){
+  $warn("Exception while loading window: "+e);
+  throw e;
+}
 };
 
 

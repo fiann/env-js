@@ -44,7 +44,7 @@ __extend__(HTMLImageElement.prototype, {
     set src(value){
         this.setAttribute('src', value);
 
-        var event = document.createEvent();
+        var event = this.ownerDocument.createEvent();
         event.initEvent("load");
         this.dispatchEvent( event, false );
     },
@@ -55,8 +55,8 @@ __extend__(HTMLImageElement.prototype, {
         this.setAttribute('width', value);
     },
     onload: function(event){
-        __eval__(this.getAttribute('onload')||'', this)
+        return __eval__(this.getAttribute('onload')||'', this)
     }
 });
 
-$w.HTMLImageElement = HTMLImageElement;
+// $w.HTMLImageElement = HTMLImageElement;d

@@ -10,6 +10,7 @@ var HTMLTableSectionElement = function(ownerDocument) {
 HTMLTableSectionElement.prototype = new HTMLElement;
 __extend__(HTMLTableSectionElement.prototype, {    
     
+    /* commented out upstream
     appendChild : function (child) {
     
         // disallow nesting of these elements.
@@ -19,7 +20,7 @@ __extend__(HTMLTableSectionElement.prototype, {
             return DOMNode.prototype.appendChild.apply(this, arguments);
         }
 
-    },
+    }, */
     
     get align() {
         return this.getAttribute("align");
@@ -62,7 +63,7 @@ __extend__(HTMLTableSectionElement.prototype, {
             throw new Error("Index > rows.length in call to HTMLTableSectionElement.insertRow");
         }
         
-        var row = document.createElement("tr");
+        var row = this.ownerDocument.createElement("tr");
         // If index is -1 or equal to the number of rows, 
         // the row is appended as the last row. If index is omitted 
         // or greater than the number of rows, an error will result
@@ -88,4 +89,4 @@ __extend__(HTMLTableSectionElement.prototype, {
 
 });
 
-$w.HTMLTableSectionElement = HTMLTableSectionElement;
+// $w.HTMLTableSectionElement = HTMLTableSectionElement;

@@ -5,13 +5,15 @@ $debug("Defining XPathResult");
 /*
 * XPathResult 
 */
+/*
 $w.__defineGetter__("XPathResult", function(){
     return XPathResult;
 });
+*/
 
-var XPathResult = function() {
-    this.snapshotLength = 0;
-    this.stringValue = '';
+var XPathResult = function(impl) {
+    this.current = 0;
+    this.impl = impl;
 };
 
 __extend__( XPathResult, {
@@ -29,25 +31,37 @@ __extend__( XPathResult, {
 
 __extend__(XPathResult.prototype, {
     get booleanValue(){
-      //TODO  
+      this.impl.booleanValue();
     },
+    get stringValue(){
+      this.impl.stringValue();
+    },
+/*
     get invalidIteration(){
+      throw new Error("implement invalidIteration");
         //TODO
     },
+*/
     get numberValue(){
-        //TODO
+      this.impl.numberValue();
     },
+/*
     get resultType(){
+      throw new Error("implement resultType");
         //TODO
     },
+*/
     get singleNodeValue(){
-        //TODO
+      return this.impl.nodeSetValue()[0];
     },
-    iterateNext: function(){
-        //TODO
+    get snapshotLength(){
+      return this.impl.nodeSetValue().length;
     },
     snapshotItem: function(index){
-        //TODO
+      return this.impl.nodeSetValue()[index];
+    },
+    iterateNext: function(){
+      return this.impl.nodeSetValue()[this.current++];
     }
 });
 

@@ -25,7 +25,26 @@
       Envjs.evaluate = $env.$master.evaluate;
   
       // $w.__loadAWindowsDocument__(options.url || "about:blank");
-      $env.load(options.url || "about:blank");
+
+      (function(){
+          var fns = [];
+          for(var key in $master["static"]) {
+              if(key.match(/^envjs_init_\d+$/)){
+                  fns.push(key);
+              }
+          }
+          fns.sort();
+          var nu = this.__nu__ = {};
+          nu.base = '';
+          nu.metaProps = {};
+          for(var i in fns) {
+              // print(fns[i]);
+              // print($master["static"][fns[i]]);
+              $master["static"][fns[i]](this,this.document);
+          }
+      }());
+
+      $env.load(options.url || "about:blank", options.xhr);
     };
 
     return $env;
@@ -33,7 +52,13 @@
   })(); // close function definition begun in 'intro.js'
 
   // Initial window setup
-  $env.init.call(this);
+  var init = $env.init;
+  init();
+
+} catch(e) {
+    // $warn("Exception during load: "+e);
+    throw e;
+}
 
 })();
 

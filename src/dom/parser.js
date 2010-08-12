@@ -7,15 +7,16 @@ var DOMParser = function(){};
 __extend__(DOMParser.prototype,{
     parseFromString: function(xmlString){
         $debug("Parsing XML String: " +xmlString);
+        throw new Error("implement when testable");
         return document.implementation.createDocument().loadXML(xmlString);
     }
 });
 
 $debug("Initializing Internal DOMParser.");
 //keep one around for internal use
-$domparser = new DOMParser();
+var $domparser = new DOMParser();
 
-$w.DOMParser = DOMParser;
+// $w.DOMParser = DOMParser;
 // =========================================================================
 //
 // xmlsax.js - an XML SAX parser in JavaScript.
@@ -62,7 +63,7 @@ var whitespace = "\n\r\t ";
 **/
 
 
-/*var XMLP = function(strXML) {
+var XMLP = function(strXML) {
     // Normalize line breaks
     strXML = SAXStrings.replace(strXML, null, null, "\r\n", "\n");
     strXML = SAXStrings.replace(strXML, null, null, "\r", "\n");
@@ -719,7 +720,6 @@ XMLP.prototype._setErr = function(iErr) {
     return XMLP._ERROR;
 
 }
-*/
 
 /**
 * function:   SAXDriver
@@ -729,7 +729,7 @@ XMLP.prototype._setErr = function(iErr) {
 *   event-based interface for parsing. This is the object users interact with when coding
 *   with XML for <SCRIPT>
 **/
-/*
+
 var SAXDriver = function() {
     this.m_hndDoc = null;
     this.m_hndErr = null;
@@ -1106,7 +1106,6 @@ Stack: A simple stack class, used for verifying document structure.
 
     Author:   Scott Severtson
 *****************************************************************************************************************/
-/*
 var Stack = function() {
     this.m_arr = new Array();
 };
@@ -1148,7 +1147,6 @@ __extend__(Stack.prototype, {
 function isEmpty(str) {
     return (str==null) || (str.length==0);
 };
-*/
 
 /**
  * function __escapeXML__

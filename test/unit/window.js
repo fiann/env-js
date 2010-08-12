@@ -39,3 +39,19 @@ test("References to the window object", function() {
         "for top-level document 'window.top' refers to itself");
     }catch(e){print(e);}
 });
+
+test("Allows to change the window.location.hash parameter w/o hash", function() {
+  expect(1);
+  try {
+    window.location.hash = 'test';
+    ok(window.location.hash === '#test');
+  }catch(e){print(e);}
+});
+
+test("Allows to change the window.location.hash parameter w/hash", function() {
+  expect(1);
+  try {
+    window.location.hash = '#test';
+    ok(window.location.hash === '#test');
+  }catch(e){print(e);}
+});

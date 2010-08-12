@@ -1,5 +1,28 @@
 (function(){
 
+try {
+
+(function(){
+  for(var symbol in $master["static"]) {
+    if(symbol.match(/^(DOM|HTML|XPath)/)){
+      // $master.print("import",symbol);
+      if(typeof $master["static"][symbol] === "undefined") {
+        throw new Error("Cannot import " + symbol + ": undefined");
+      }
+      this[symbol] = $master["static"][symbol];
+    }
+  }
+  var symbols = [ "Event" ];
+  for(var i in symbols) {
+    symbol = symbols[i];
+    // $master.print("import",symbol);
+    if(typeof $master["static"][symbol] === "undefined") {
+      throw new Error("Cannot import " + symbol + ": undefined");
+    }
+    this[symbol] = $master["static"][symbol];
+  }
+}());
+
   var $env = (function(){
     
     var $env = {};
@@ -8,19 +31,11 @@
     var $public = (function(){
       var $public = {};
       return $public;
-    })();
+    }());
 
     var $platform = function(master){
 
       var $platform = {};
-
-      $platform.new_global = function() {
-        return $master.new_global();
-      };
-
-      $platform.set_global = function(global) {
-        return $master.set_global(global);
-      };
 
       $platform.new_split_global_outer = function() {
         return $master.new_split_global_outer();
@@ -30,12 +45,11 @@
         return $master.new_split_global_inner(proxy,undefined);
       };
 
-      ( master.window_index === undefined ) && ( master.window_index = 0 );
-
-      $platform.init_window = function(window) {
-        var index = master.window_index++;
-        window.toString = function(){
+      $platform.init_window = function(inner) {
+        var index = master.next_window_index()+0;
+        inner.toString = function(){
           return "[object Window "+index+"]";
+          // return "[object Window]";
         };
       };
 
@@ -43,13 +57,16 @@
     };
 
     $env.new_window = function(proxy){
-      var swap_script_window = ( $master.first_script_window.window === proxy );
+      var swap_script_window; // = ( $master.first_script_window.window === proxy );
       if(!proxy){
         proxy = $platform.new_split_global_outer();
-        // $master.print("np",proxy);
       }
       $master.proxy = proxy;
-      new_window = $platform.new_split_global_inner(proxy,undefined);
+// try{throw new Error("huh?");}catch(e){print("here",e.stack);}
+// var now = Date.now();
+      var new_window = $platform.new_split_global_inner(proxy,undefined);
+// print("nw "+(Date.now()-now));
+      new_window.$inner = new_window;
       if(swap_script_window) {
         $master.first_script_window = new_window;
       }
@@ -58,42 +75,67 @@
         var symbol = $master.symbols[index];
         new_window[symbol] = $master[symbol];
       }
-      new_window.load = function(){
-        for(var i = 0; i < arguments.length; i++){
-          var f = arguments[i];
-          $master.load(f,new_window);
-        }
-      };
       return [ proxy, new_window ];
     };
 
     $env.init = function(){
-      $master = this.$master;
-      delete this.$master;
+      $env.$master = $master = this.$master;
       $platform = $platform($master);
+      var $inner = this.$inner; 
       var options = this.$options;
-      delete this.$options;
-      $env.$master = $master;
-      $env.init_window.call(this,options);
+      // delete $inner.$master;
+      delete $inner.$platform;
+      delete $inner.$options;
+      $inner.$envx = $env;
+      $env.init_window.call($inner,$inner,options);
     };
 
-    $env.init_window = function(options){
+    $env.init_window = function(inner,options){
+      var $inner = inner;
+      var $w = this;
+
+      inner.load = function(){
+        for(var i = 0; i < arguments.length; i++){
+          var f = arguments[i];
+          $master.load(f,inner);
+        }
+      };
+
+      inner.evaluate = function(string){
+        return $master.evaluate.call(string,inner);
+      };
+
       options = options || {};
 
-      $platform.init_window(this);
+      var copy_opts = function copy_opts(options){
+        var new_opts = {};
+        var undef;
+        for(var xxx in options){
+          if (typeof options[xxx] === "undefined") {
+            new_opts[xxx] = undef;
+          } else if (options[xxx] === null) {
+            new_opts[xxx] = null;
+          } else if (typeof options[xxx] == "object" && options[xxx]+"" === "[object split_global]") {
+            new_opts[xxx] = options[xxx];
+          } else if (typeof options[xxx] == "object" && ((options[xxx]+"").match(/^\[object Window[ 0-9]*\]$/))) {
+            new_opts[xxx] = options[xxx];
+          } else if (typeof options[xxx] == "string") {
+            new_opts[xxx] = options[xxx]+"";
+          } else if (typeof options[xxx] == "object" && (options[xxx].constructor+"").match(/^function Object\(\)/) ) {
+            new_opts[xxx] = copy_opts(options[xxx]);
+          } else {
+            throw new Error("copy "+xxx+ " "+typeof options[xxx] + " " +options[xxx] + " " + options[xxx].constructor);
+          }
+        }
+        return new_opts;
+      };
+
+      options = copy_opts(options);
+
+      $platform.init_window($w);
 
       var print = $master.print;
 
-      // print("set",this);
-      // print("set",this.window);
-      // print("set",options.proxy);
-      // print("set",this === options.proxy);
-      if ( !this.window) {
+      if (!this.window) {
         this.window = this;
       }
-      // print("setx",this);
-      // print("setx",this.window);
-
-      var $w = this;
-      // print("$$w",$w);
-      // print("$$w",$w === this);

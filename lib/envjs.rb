@@ -1,5 +1,7 @@
 module Envjs
 
+  VERSION = "0.3.7"
+
   def self.js_exception_stack e
     result = %(Exception: )+e.to_s
     e.stack.to_s.split(%(\n)).each do |line|
@@ -19,5 +21,15 @@ module Envjs
     File.expand_path( File.join( File.dirname(__FILE__),
                                   "envjs",
                                   "env.js" ) )
+
+  EVENT_LOOP = 
+    File.expand_path( File.join( File.dirname(__FILE__),
+                                  "envjs",
+                                  "event_loop.js" ) )
+
+  STATIC = 
+    File.expand_path( File.join( File.dirname(__FILE__),
+                                  "envjs",
+                                  "static.js" ) )
 
 end

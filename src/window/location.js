@@ -5,14 +5,46 @@
 $debug("Initializing Window Location.");
 //the current location
 var $location = '';
+$env.__url = function(url){
+    $location = url;
+};
 
 $w.__defineSetter__("location", function(url){
-  if( !$location || $location == "about:blank" ) {
+  if (false) {
+    if (url[0] === "#") {
+      // print("return anchor only");
+      return;
+    }
+    var now = window.location.href.replace(/^file:\/\//,"").replace(/#.*/,"");
+    var to = $master.first_script_window && $master.first_script_window.location.href;
+    // var to = $env.location(url,window.location.href != "about:blank" ? window.location.href: undefined);
+    // I'm not sure why this code is here ... looking at the FSW
+    // print("nu",now,url,to);
+    to = to || $env.location(url,window.location.href);
+    // print("nu",now,url,to);
+    if (to && to.indexOf(now)===0 && to[now.length]==="#") {
+      // print("return diff anchor only");
+      return;
+    }
+    if (url && url.indexOf(now)===0 && url[now.length]==="#") {
+      // print("return diff anchor only");
+      return;
+    }
+    // print($location, window.location.href === $location,  $location.indexOf("#")>0);
+    if (url === window.location.href && $location.indexOf("#")>0) {
+      // print('returning same with anchor');
+      return;
+    }
+    // print("ft",window.location.href,$location,url);
+  }
+  // debug("l",url,$w.location);
+  if( !$location || ( $location == "about:blank" && url !== "about:blank" ) ) {
     // $w.__loadAWindowsDocument__(url);
     $env.load(url);
   } else {
     $env.unload($w);
     var proxy = $w.window;
+    // print("re",url);
     $env.reload(proxy, url);
   }
 });
@@ -32,14 +64,18 @@ $w.__defineGetter__("location", function(url){
 		set hash(_hash){
 			//setting the hash is the only property of the location object
 			//that doesn't cause the window to reload
+            var prot = this.protocol;
+            // FIXME this is a hack until the new url stuff is integrated
+            if (prot === "file:") {
+                prot = "file:///";
+            }
 			_hash = _hash.indexOf('#')===0?_hash:"#"+_hash;	
-			$location = this.protocol + this.host + this.pathname + 
+			$location = prot + this.host + this.pathname + 
 				this.search + _hash;
-			setHistory(_hash, "hash");
+			__setHistory__(_hash, "hash");
 		},
 		get host(){
-			return this.hostname + 
-			  ((this.port === "" || this.port === "80" || this.port === "443") ? "" : ":"+this.port);
+			return this.hostname + ((this.port !== "")?":"+this.port:"");
 		},
 		set host(_host){
 			$w.location = this.protocol + _host + this.pathname + 
@@ -109,3 +145,8 @@ $w.__defineGetter__("location", function(url){
     };
 });
 
+// Local Variables:
+// espresso-indent-level:4
+// c-basic-offset:4
+// tab-width:4
+// End:

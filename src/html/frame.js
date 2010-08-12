@@ -57,9 +57,18 @@ __extend__(HTMLFrameElement.prototype, {
         this.setAttribute('src', value);
 
         if (value && value.length > 0){
-            $env.loadFrame(this, $env.location(value));
+            var save = $master.first_script_window;
+            try {
+              var $env = this.ownerDocument._parentWindow.$envx;
+              var $inner = this.ownerDocument._parentWindow["$inner"];
+              $master.first_script_window = $inner;
+              $env.loadFrame(this, $env.location(value));
+            } finally {
+              $master.first_script_window = save;
+            }
+
             
-            var event = document.createEvent();
+            var event = this.ownerDocument.createEvent();
             event.initEvent("load");
             this.dispatchEvent( event, false );
         }
@@ -73,8 +82,8 @@ __extend__(HTMLFrameElement.prototype, {
         return this._content;
     },
     onload: function(event){
-        __eval__(this.getAttribute('onload')||'', this)
+        return __eval__(this.getAttribute('onload')||'', this)
     }
 });
 
-$w.HTMLFrameElement = HTMLFrameElement;
+// $w.HTMLFrameElement = HTMLFrameElement;

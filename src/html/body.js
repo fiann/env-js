@@ -9,11 +9,11 @@ var HTMLBodyElement = function(ownerDocument) {
 HTMLBodyElement.prototype = new HTMLElement;
 __extend__(HTMLBodyElement.prototype, {
     onload: function(event){
-        __eval__(this.getAttribute('onload')||'', this)
+        return __eval__(this.getAttribute('onload')||'', this)
     },
     onunload: function(event){
-        __eval__(this.getAttribute('onunload')||'', this)
+        return __eval__(this.getAttribute('onunload')||'', this)
     }
 });
 
-$w.HTMLBodyElement = HTMLBodyElement;
+// $w.HTMLBodyElement = HTMLBodyElement;

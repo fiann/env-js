@@ -19,7 +19,52 @@ var HTMLDocument = function(implementation, docParentWindow, docReferrer) {
 };
 HTMLDocument.prototype = new DOMDocument;
 __extend__(HTMLDocument.prototype, {
+    loadXML : function(xmlString, url) {
+        if (url) {
+            var $env =  this._parentWindow.$envx;
+            $env.__url(url);
+        }
+
+        // create DOM Document
+/*
+        if(this === $document){
+            $debug("Setting internal window.document");
+            $document = this;
+        }
+*/
+        // populate Document with Parsed Nodes
+        try {
+            // make sure thid document object is empty before we try to load ...
+            this.childNodes      = new DOMNodeList(this, this);
+            this.firstChild      = null;
+            this.lastChild       = null;
+            this.attributes      = new DOMNamedNodeMap(this, this);
+            this._namespaces     = new DOMNamespaceNodeMap(this, this);
+            this._readonly = false;
+            
+//          var now = Date.now();
+// print("begin parse");
+try{
+            this._parentWindow.parseHtmlDocument(xmlString, this, null, null);
+}catch(e){
+  print("oopsd",e);
+  throw e;
+}
+// print("end parse");
+//          print("parse time: "+(Date.now() - now)/1000.);
+//          print("parse: "+xmlString.substring(0,80));
+
+            
+        } catch (e) {
+            $error(e);
+        }
+
+        // set parseComplete flag, (Some validation Rules are relaxed if this is false)
+        this._parseComplete = true;
+        return this;
+    },
     createElement: function(tagName){
+          var node;
           //print('createElement :'+tagName);
           // throw Exception if the tagName string contains an illegal character
           if (__ownerDocument__(this).implementation.errorChecking && 
@@ -146,7 +191,7 @@ __extend__(HTMLDocument.prototype, {
 
     //set/get cookie see cookie.js
     get domain(){
-        return this._domain||$w.location.domain;
+        return this._domain||this._parentWindow.location.domain;
         
     },
     set domain(){
@@ -171,7 +216,7 @@ __extend__(HTMLDocument.prototype, {
         
     },
     get location(){
-        return $w.location
+        return this._parentWindow.location
     },
     get referrer(){
         return this._referrer;
@@ -219,13 +264,18 @@ __extend__(HTMLDocument.prototype, {
     },
     get async(){ return this.$async;},
     set async(async){ this.$async = async; },
-    get baseURI(){ return $env.location('./'); },
-    get URL(){ return $w.location.href;  },
-    set URL(url){ $w.location.href = url;  }
+    get baseURI(){
+      var $env =  this.ownerDocument._parentWindow.$envx;
+      return $env.location('./');
+    },
+    get URL(){ return this._parentWindow.location.href;  },
+    set URL(url){ this._parentWindow.location.href = url;  },
 });
 
 var __elementPopped__ = function(ns, name, node){
-    // print('Element Popped: '+ns+" "+name+ " "+ node+" " +node.type+" "+node.nodeName);
+try{
+    var $env =  __ownerDocument__(node)._parentWindow.$envx;
+    // $error('Element Popped: '+ns+" "+name+ " "+ node+" " +node.type+" "+node.nodeName);
     var doc = __ownerDocument__(node);
     // SMP: subtle issue here: we're currently getting two kinds of script nodes from the html5 parser.
     // The "fake" nodes come with a type of undefined. The "real" nodes come with the type that's given,
@@ -234,17 +284,25 @@ var __elementPopped__ = function(ns, name, node){
     var type = ( node.type === null ) ? "text/javascript" : node.type;
     try{
         if(node.nodeName.toLowerCase() == 'script' && type == "text/javascript"){
-            //$env.debug("element popped: script\n"+node.xml);
-            // unless we're parsing in a window context, don't execute scripts
-            if (doc.parentWindow){
-                //p.replaceEntities = true;
-                var okay = $env.loadLocalScript(node, null);
-                // only fire event if we actually had something to load
-                if (node.src && node.src.length > 0){
-                    var event = doc.createEvent();
-                    event.initEvent( okay ? "load" : "error", false, false );
-                    node.dispatchEvent( event, false );
-                  }
+            // print(node,doc.in_inner_html);
+            if (doc.in_inner_html) {
+                // this is a fib, but ...
+                // print("ignore",node);
+                // node.executed = true;
+            } else {
+                //$env.debug("element popped: script\n"+node.xml);
+                // unless we're parsing in a window context, don't execute scripts
+                // this probably doesn't do anything ...
+                if (true /*doc.parentWindow && !node.ownerDocument.is_innerHTML*/){
+                    //p.replaceEntities = true;
+                    var okay = $env.loadLocalScript(node, null);
+                    // only fire event if we actually had something to load
+                    if (node.src && node.src.length > 0){
+                            var event = doc.createEvent();
+                        event.initEvent( okay ? "load" : "error", false, false );
+                        node.dispatchEvent( event, false );
+                    }
+                }
             }
         }
         else if (node.nodeName.toLowerCase() == 'frame' ||
@@ -255,13 +313,15 @@ var __elementPopped__ = function(ns, name, node){
                 $debug("getting content document for (i)frame from " + node.src);
     
                 // any JS here is DOM-instigated, so the JS scope is the window, not the first script
-              
-                var save = $master.first_script_window;
-                $master.first_script_window = window;
 
-                $env.loadFrame(node, $env.location(node.src));
+              var $inner = node.ownerDocument._parentWindow["$inner"];
+
+              var save = $master.first_script_window;
+              $master.first_script_window = $inner;
+
+              $env.loadFrame(node, $env.location(node.src));
     
-                $master.first_script_window = save;
+              $master.first_script_window = save;
 
                 var event = doc.createEvent();
                 event.initEvent("load", false, false);
@@ -287,8 +347,18 @@ var __elementPopped__ = function(ns, name, node){
             }
         }
     }catch(e){
-        $env.error('error loading html element', e);
+        $error('error loading html element', e);
+        $error(e);
     }
+} catch(e) {
+  $error("arg",e);
+}
 };
 
-$w.HTMLDocument = HTMLDocument;
+//$w.HTMLDocument = HTMLDocument;
+
+// Local Variables:
+// espresso-indent-level:4
+// c-basic-offset:4
+// tab-width:4
+// End:
